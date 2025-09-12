@@ -143,28 +143,34 @@ Private Function getLocalOneDrivePath(ByVal targetPath As String) As String
     'this function returns the original/local disk path associated with a synched OneDrive or SharePoint cloud url
     'this function assumes that the specified path exists
     Dim origPath As String: origPath = targetPath '(@6DiegoDiego9)
+    Dim fso As New FileSystemObject
 
-    Const HKCU = &H80000001
-    Dim objReg As Object, rPath As String, subKeys() As Variant, subKey As Variant
-    Dim urlNamespace As String, mountPoint As String, secPart As String
+    Const HKCU As Long = &H80000001
+    Const rPath As String = "Software\SyncEngines\Providers\OneDrive\"
+    Dim objReg As Object, subKeys() As Variant, subKey As Variant
+    Dim urlNamespace As String, mountPoint As String, CID As String, secPart As String
     Set objReg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\." & "\root\default:StdRegProv")
-    rPath = "Software\SyncEngines\Providers\OneDrive\"
     objReg.EnumKey HKCU, rPath, subKeys
     For Each subKey In subKeys
         objReg.GetStringValue HKCU, rPath & subKey, "UrlNamespace", urlNamespace
         If urlNamespace <> "" And InStr(targetPath & "/", urlNamespace) > 0 Then
+            ' Get the mount point for OneDrive, and make sure it ends in "\":
             objReg.GetStringValue HKCU, rPath & subKey, "MountPoint", mountPoint
-            secPart = Replace$(Mid$(targetPath, Len(urlNamespace)), "/", "\")
-            targetPath = mountPoint & secPart
-            Do Until Dir(targetPath, vbDirectory) <> "" Or InStr(2, secPart, "\") = 0
-                secPart = Mid$(secPart, InStr(2, secPart, "\"))
-                targetPath = mountPoint & secPart
-            Loop
+            If Right$(mountPoint, 1) <> "\" Then mountPoint = mountPoint & "\"
+            
+            ' Get the CID, and add "/" at the start if any value returned:
+            objReg.GetStringValue HKCU, rPath & subKey, "CID", CID
+            If CID <> vbNullString Then CID = "/" & CID
+            
+            secPart = Mid$(targetPath, Len(urlNamespace) + 1)
+            ' Remove CID from the secPart if the CID is indeed part of it:
+            secPart = Replace$(secPart, CID, "")
+            secPart = Replace$(secPart, "/", "\")
+            targetPath = fso.BuildPath(mountPoint, secPart)
             Exit For
         End If
     Next subKey
     
-    Dim fso As New FileSystemObject
     If Not (fso.FileExists(targetPath) Or fso.FolderExists(targetPath)) Then
         targetPath = origPath 'fallback to original path if it's online-only (excluded from sync) (@6DiegoDiego9)
     End If

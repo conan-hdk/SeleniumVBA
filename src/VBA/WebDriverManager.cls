@@ -12,7 +12,7 @@ Attribute VB_Description = "This class is used to maintain Selenium driver/brows
 '@Exposed
 '@folder("SeleniumVBA.Source")
 ' ==========================================================================
-' SeleniumVBA v6.6
+' SeleniumVBA v6.9
 '
 ' A Selenium wrapper for browser automation developed for MS Office VBA
 '
@@ -279,6 +279,7 @@ Attribute GetInstalledDriverVersion.VB_Description = "Returns the installed Driv
     driverPath = WebShared.getFullLocalPath(driverPath, mDefaultDriverFolder, False)
     
     Set fso = New FileSystemObject
+    
     If Not fso.FileExists(driverPath) Then
         GetInstalledDriverVersion = verDriverNotFound
         Exit Function
@@ -293,6 +294,7 @@ Attribute GetInstalledDriverVersion.VB_Description = "Returns the installed Driv
         End If
     End If
     
+    'following for Firefox only
     Set wsh = New IWshRuntimeLibrary.WshShell
     resp = wsh.Exec(Chr$(34) & driverPath & Chr$(34) & " --version").StdOut.ReadAll
     GetInstalledDriverVersion = findVersionInString(resp, browser)
@@ -543,7 +545,7 @@ End Function
 Public Sub DownloadAndInstallDriver(ByVal browser As svbaBrowser, ByVal driverVersion As String, Optional ByVal driverPath As Variant, Optional ByVal platform As svbaPlatform = svbaSystem)
 Attribute DownloadAndInstallDriver.VB_Description = "Downloads and installs the specified Driver version"
     Dim Url As String
-    Dim fso As New IWshRuntimeLibrary.FileSystemObject
+    Dim fso As New FileSystemObject
     Dim shll As New Shell32.Shell
     Dim driverFolder As String
     Dim driverFileName As String
@@ -614,7 +616,9 @@ Attribute DownloadAndInstallDriver.VB_Description = "Downloads and installs the 
         fso.CreateFolder tmpInstallFolder
     End If
     
-    UrlDownloadToFile 0&, StrPtr(Url), StrPtr(tmpInstallZipPath), 0&, 0&
+    If Not WebShared.downloadToFile(Url, tmpInstallZipPath) Then
+        Err.Raise 1, "WebDriverManager", "Error: Driver Download Not Successful"
+    End If
     
     'make sure driver zip file was created successfully
     If Not fso.FileExists(tmpInstallZipPath) Then
@@ -629,7 +633,7 @@ Attribute DownloadAndInstallDriver.VB_Description = "Downloads and installs the 
 
     'check if driver exists and if it does, make sure it isn't in use before overwrite
     If fso.FileExists(driverPath) Then
-        If isProcessRunning(driverFileName) Then taskKillByImage (driverFileName): WebShared.SleepWinAPI 100
+        If isProcessRunning(driverFileName) Then WebShared.taskTerminate "im", driverFileName: WebShared.SleepWinAPI 100
     End If
 
     'copy file from temp folder to driver path
@@ -688,20 +692,20 @@ Private Sub deleteDriver(ByVal driverPath As String)
     driverPath = WebShared.getFullLocalPath(driverPath, mDefaultDriverFolder, False)
     driverFileName = fso.GetFileName(driverPath)
     If fso.FileExists(driverPath) Then
-        If isProcessRunning(driverFileName) Then taskKillByImage (driverFileName)
+        If isProcessRunning(driverFileName) Then WebShared.taskTerminate "im", driverFileName
         WebShared.SleepWinAPI 100
         fso.DeleteFile driverPath, True
     End If
 End Sub
 
 Private Function isProcessRunning(ByVal process As String) As Boolean
-    Dim objServices As WbemScripting.SWbemServices
-    Dim objProcessList As WbemScripting.SWbemObjectSet
+    Dim services As Object
+    Dim processList As Object
     
-    Set objServices = GetObject("winmgmts:")
-    Set objProcessList = objServices.ExecQuery("select * from win32_process where name='" & process & "'")
+    Set services = GetObject("winmgmts:")
+    Set processList = services.ExecQuery("select * from win32_process where name='" & process & "'")
     
-    isProcessRunning = (objProcessList.Count > 0)
+    isProcessRunning = (processList.Count > 0)
 End Function
 
 Private Function requestData(ByVal Url As String, Optional maxTries As Long = 20) As Variant
@@ -715,7 +719,7 @@ Private Function requestData(ByVal Url As String, Optional maxTries As Long = 20
         On Error Resume Next
         client.Open "GET", Url, False
         
-        client.send
+        client.Send
         
         While client.readyState <> 4
             DoEvents
@@ -759,11 +763,6 @@ Private Function getBrowserString(ByVal val As svbaBrowser) As String
     End Select
 End Function
 
-Private Function taskKillByImage(ByVal taskName As String) As Variant
-    Dim wsh As New IWshRuntimeLibrary.WshShell
-    taskKillByImage = wsh.Run("taskkill /f /t /im " & taskName, 0, True)
-End Function
-
 Private Function getPlatformString(ByVal platform As svbaPlatform) As String
     Select Case platform
     Case svbaPlatform.svbaSystem
@@ -797,45 +796,45 @@ End Function
 Private Function findLatestChromeVersionFromBuild(ByVal jsonString As String, ByVal browserBuild As String) As String
     'this function assumes that input json is ordered from oldest to newest build/version numbers
     'it finds the MOST RECENT version of chrome driver that is compatible with the input browser build
-    Dim oRegExp As New VBScript_RegExp_55.RegExp
-    Dim matches As VBScript_RegExp_55.MatchCollection
-    Dim match As VBScript_RegExp_55.match
+    Dim oRegExp As New RegExp
+    Dim oMatches As MatchCollection
+    Dim oMatch As match
     Dim lastVersion As String
 
     oRegExp.Global = True
     oRegExp.Pattern = """(\d+\.\d+\.\d+)"":{""version"":""(\d+\.\d+\.\d+\.\d+)"""
-    Set matches = oRegExp.execute(jsonString)
+    Set oMatches = oRegExp.execute(jsonString)
     'find the maximum build that is less than or equal to installed browser build
-    For Each match In matches
-        If compareVersions(match.SubMatches(0), browserBuild) = 1 Then
+    For Each oMatch In oMatches
+        If compareVersions(oMatch.SubMatches(0), browserBuild) = 1 Then
             findLatestChromeVersionFromBuild = lastVersion
             Exit Function
         End If
-        lastVersion = match.SubMatches(1)
-    Next match
+        lastVersion = oMatch.SubMatches(1)
+    Next oMatch
     'if here then return last version in the file
     findLatestChromeVersionFromBuild = lastVersion
 End Function
 
 Private Function findLatestFirefoxVersion(ByVal jsonString As String) As String
     'this function finds the latest Firefox driver version number
-    Dim oRegExp As New VBScript_RegExp_55.RegExp
-    Dim matches As VBScript_RegExp_55.MatchCollection
+    Dim oRegExp As New RegExp
+    Dim oMatches As MatchCollection
     
     oRegExp.Global = False
     oRegExp.Pattern = "geckodriver-v(\d+\.\d+\.\d+)-win32\.zip"
 
-    Set matches = oRegExp.execute(jsonString)
+    Set oMatches = oRegExp.execute(jsonString)
     
-    If matches.Count = 0 Then findLatestFirefoxVersion = "Error: Release Not Found": Exit Function
+    If oMatches.Count = 0 Then findLatestFirefoxVersion = "Error: Release Not Found": Exit Function
     
-    findLatestFirefoxVersion = matches(0).SubMatches(0)
+    findLatestFirefoxVersion = oMatches(0).SubMatches(0)
 End Function
 
 Private Function findVersionInString(ByVal stringToSearch As String, ByVal browser As svbaBrowser) As String
     'this function parses the input string for the version number substring
-    Dim oRegExp As VBScript_RegExp_55.RegExp
-    Dim matches As VBScript_RegExp_55.MatchCollection
+    Dim oRegExp As New RegExp
+    Dim oMatches As MatchCollection
     Dim searchPattern As String
 
     Select Case browser
@@ -846,12 +845,11 @@ Private Function findVersionInString(ByVal stringToSearch As String, ByVal brows
     End Select
     
     On Error GoTo EH
-    Set oRegExp = New VBScript_RegExp_55.RegExp
     oRegExp.Global = False
     oRegExp.Pattern = searchPattern
 
-    Set matches = oRegExp.execute(stringToSearch)
-    If matches.Count > 0 Then findVersionInString = matches(0)
+    Set oMatches = oRegExp.execute(stringToSearch)
+    If oMatches.Count > 0 Then findVersionInString = oMatches(0)
     Exit Function
 EH:
     Err.Raise 1, , "Error in findVersionInString of WebDriverManager: VBScript_RegExp failed - make sure that it is installed on your Windows system and is not being blocked by AV software."

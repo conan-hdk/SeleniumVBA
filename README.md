@@ -5,7 +5,7 @@ A comprehensive Selenium wrapper for browser automation developed for MS Office 
 ## Features
 
 - Edge, Chrome, and Firefox browser automation support
-- MS Excel Add-in, MS Access DB, and [twinBASIC](https://twinbasic.com/preview.html) ActiveX DLL solutions available
+- MS Excel Workbook, MS Access DB, and [twinBASIC](https://twinbasic.com/preview.html) ActiveX DLL solutions available
 - A superset of Selenium's [W3C WebDriver](https://w3c.github.io/webdriver/) commands - [over 400 public methods and properties](https://github.com/GCuser99/SeleniumVBA/wiki/Object-Model-Overview)
 - Support for HTML DOM, Action Chains, SendKeys, Shadow Roots, Cookies, ExecuteScript, and Capabilities
 - ExecuteCDP method exposing [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/) - a low-level interface for browser interaction.
@@ -117,7 +117,7 @@ This project is an extensively modified/extended version of uezo's [TinySelenium
 
 [twinBASIC](https://twinbasic.com/preview.html) by Wayne Phillips
 
-[Inno Setup](https://jrsoftware.org/isinfo.php) by Jordan Russell and [UninsIS](https://github.com/Bill-Stewart/UninsIS) by Bill Stewart
+[Inno Setup](https://jrsoftware.org/isinfo.php) by Jordan Russell
 
 [vba-regex](https://github.com/sihlfall/vba-regex) by sihlfall
 

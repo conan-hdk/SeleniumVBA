@@ -5,7 +5,7 @@ A comprehensive Selenium wrapper for browser automation developed for MS Office 
 ## Features
 
 - Edge, Chrome, and Firefox browser automation support
-- MS Excel Workbook, MS Access DB, and [twinBASIC](https://twinbasic.com/preview.html) ActiveX DLL solutions available
+- MS Excel Workbook, MS Access DB, and [twinBASIC](https://twinbasic.com/) ActiveX DLL solutions available
 - A superset of Selenium's [W3C WebDriver](https://w3c.github.io/webdriver/) commands - [over 400 public methods and properties](https://github.com/GCuser99/SeleniumVBA/wiki/Object-Model-Overview)
 - Support for HTML DOM, Action Chains, SendKeys, Shadow Roots, Cookies, ExecuteScript, and Capabilities
 - ExecuteCDP method exposing [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/) - a low-level interface for browser interaction.
@@ -23,7 +23,7 @@ A comprehensive Selenium wrapper for browser automation developed for MS Office 
 
 Driver updates can also be programmatically invoked via the [WebDriverManager class](https://github.com/GCuser99/SeleniumVBA/wiki/Object-Model-Overview#webdrivermanager).
 
-The [twinBASIC](https://twinbasic.com/preview.html) ActiveX DLL solution requires no dependencies (such as .Net Framework). To try it, download and run the installer in the [dist folder](https://github.com/GCuser99/SeleniumVBA/tree/main/dist).
+The [twinBASIC](https://twinbasic.com/) ActiveX DLL solution requires no dependencies (such as .Net Framework). To try it, download and run the installer in the [dist folder](https://github.com/GCuser99/SeleniumVBA/tree/main/dist).
 
 ## SendKeys Example
 
@@ -114,7 +114,7 @@ This project is an extensively modified/extended version of uezo's [TinySelenium
 
 [RubberDuck](https://rubberduckvba.com/) by Mathieu Guindon
 
-[twinBASIC](https://twinbasic.com/preview.html) by Wayne Phillips
+[twinBASIC](https://twinbasic.com/) by Wayne Phillips
 
 [Inno Setup](https://jrsoftware.org/isinfo.php) by Jordan Russell
 
